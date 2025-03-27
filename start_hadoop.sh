@@ -25,7 +25,7 @@ docker run --hostname=quickstart.cloudera --privileged=true -d -it \
 -p 60010:60010 \
 -p 60030:60030 \
 -v $LOCAL_DIR:/host \
---memory 4g \
+--memory 8g \
 --name cloudera_quickstart \
 csit6000o/quickstart:latest \
 /etc/bootstrap.sh -bash
