@@ -2,6 +2,8 @@ package hk.ust.csit5970;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -10,6 +12,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.math3.stat.descriptive.summary.Sum;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -18,6 +21,7 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.TestMiniMRClientCluster.MyReducer;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
@@ -48,11 +52,33 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 			String line = ((Text) value).toString();
+			// remove punctuation marks
+			// line = line.replaceAll("--", " ");
+			// line = line.replaceAll("[^a-zA-Z0-9\\s-]", " ");
 			String[] words = line.trim().split("\\s+");
 			
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			String blank = " "; // make sure (a,*) is the first to be counted
+			if (words.length > 1){
+				String pre_word = words[0];
+				for(int i=1; i<words.length; i++){
+					String w = words[i];
+					if(w.length() == 0){
+						continue;
+					}
+					// count bigram
+					BIGRAM.set(pre_word, w);
+					context.write(BIGRAM, ONE);
+					// count single word(pre word, blank)
+					BIGRAM.set(pre_word, blank);
+					context.write(BIGRAM, ONE);
+					// update prefix
+					pre_word = w;
+				}
+			} 
+
 		}
 	}
 
@@ -64,6 +90,7 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 
 		// Reuse objects.
 		private final static FloatWritable VALUE = new FloatWritable();
+		private int current_prefix_count = 0;
 
 		@Override
 		public void reduce(PairOfStrings key, Iterable<IntWritable> values,
@@ -71,6 +98,21 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+				Iterator<IntWritable> iter = values.iterator();
+				int sum = 0;
+				while (iter.hasNext()) {
+					sum += iter.next().get();
+				}
+				if(key.getRightElement().equals(" ")){
+					current_prefix_count = sum;
+					VALUE.set((float) sum);
+					context.write(key, VALUE);
+				}
+				else{
+					float value = (float) sum / current_prefix_count;
+					VALUE.set(value);
+					context.write(key, VALUE);
+				}
 		}
 	}
 	
@@ -84,6 +126,13 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+				Iterator<IntWritable> iter = values.iterator();
+				int sum = 0;
+				while (iter.hasNext()) {
+					sum += iter.next().get();
+				}
+				SUM.set(sum);
+				context.write(key, SUM);
 		}
 	}
 
