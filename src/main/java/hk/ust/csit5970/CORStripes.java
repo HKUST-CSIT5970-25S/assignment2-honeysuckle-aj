@@ -16,6 +16,10 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
 
+import hk.ust.csit5970.CORStripes.CORStripesCombiner2;
+import hk.ust.csit5970.CORStripes.CORStripesMapper2;
+import hk.ust.csit5970.CORStripes.CORStripesReducer2;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,6 +37,8 @@ public class CORStripes extends Configured implements Tool {
 	 */
 	private static class CORMapper1 extends
 			Mapper<LongWritable, Text, Text, IntWritable> {
+		private static final Text WORD = new Text();
+		private static final IntWritable NUM = new IntWritable(1);
 		@Override
 		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
@@ -43,19 +49,41 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			while (doc_tokenizer.hasMoreTokens()) {
+				String word = doc_tokenizer.nextToken();
+				if (word_set.containsKey(word)) {
+					word_set.put(word, word_set.get(word) + 1);
+				} else {
+					word_set.put(word, 1);
+				}
+			}
+			for (Map.Entry<String, Integer> entry : word_set.entrySet()) {
+				WORD.set(entry.getKey());
+				NUM.set(entry.getValue());
+				context.write(WORD, NUM);
+			}
 		}
 	}
 
 	/*
 	 * TODO: Write your first-pass reducer here.
 	 */
+	private static IntWritable SUM = new IntWritable(0);
 	private static class CORReducer1 extends
 			Reducer<Text, IntWritable, Text, IntWritable> {
 		@Override
-		public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+		public void reduce(Text key, Iterable<IntWritable> values, Context context)
+				throws IOException, InterruptedException {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			int sum = 0;
+			for (IntWritable value : values) {
+				sum += value.get();
+			}
+			SUM.set(sum);
+			context.write(key, SUM);
+
 		}
 	}
 
@@ -85,7 +113,8 @@ public class CORStripes extends Configured implements Tool {
 		static IntWritable ZERO = new IntWritable(0);
 
 		@Override
-		protected void reduce(Text key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException {
+		protected void reduce(Text key, Iterable<MapWritable> values, Context context)
+				throws IOException, InterruptedException {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
@@ -101,7 +130,8 @@ public class CORStripes extends Configured implements Tool {
 
 		/*
 		 * Preload the middle result file.
-		 * In the middle result file, each line contains a word and its frequency Freq(A), seperated by "\t"
+		 * In the middle result file, each line contains a word and its frequency
+		 * Freq(A), seperated by "\t"
 		 */
 		@Override
 		protected void setup(Context context) throws IOException, InterruptedException {
@@ -138,7 +168,8 @@ public class CORStripes extends Configured implements Tool {
 		 * TODO: Write your second-pass Reducer here.
 		 */
 		@Override
-		protected void reduce(Text key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException {
+		protected void reduce(Text key, Iterable<MapWritable> values, Context context)
+				throws IOException, InterruptedException {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
@@ -232,7 +263,6 @@ public class CORStripes extends Configured implements Tool {
 		// Delete the output directory if it exists already.
 		Path outputDir = new Path(outputPath);
 		FileSystem.get(conf1).delete(outputDir, true);
-
 
 		Configuration conf2 = new Configuration();
 		Job job2 = Job.getInstance(conf2, "Secondpass");
