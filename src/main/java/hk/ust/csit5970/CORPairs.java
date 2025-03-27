@@ -210,7 +210,7 @@ public class CORPairs extends Configured implements Tool {
 			}
 			left_word = key.getLeftElement();
 			right_word = key.getRightElement();
-			float value = (float) sum / (word_total_map.get(left_word) * word_total_map.get(right_word));
+			double value = (double) sum / (word_total_map.get(left_word) * word_total_map.get(right_word));
 			VALUE.set(value);
 			context.write(key, VALUE);
 		}
