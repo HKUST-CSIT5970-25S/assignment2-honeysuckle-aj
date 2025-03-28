@@ -52,6 +52,8 @@ for pair in ctr:
     cnt = ctr[pair]
     pair_freq = float(cnt)
     words = pair.split("/")
+    if words[0] == "and" and words[1] == "of":
+        print(pair_freq, single_key_freq[words[0]], single_key_freq[words[1]])
     COR = pair_freq / (single_key_freq[words[0]] * single_key_freq[words[1]])
     df.loc[len(df.index)] = [words[0], words[1], COR]
 df = df.sort_values(by = ['word1', 'word2'], ascending = (True, True))
