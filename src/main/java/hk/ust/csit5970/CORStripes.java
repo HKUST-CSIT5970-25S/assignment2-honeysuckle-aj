@@ -116,12 +116,12 @@ public class CORStripes extends Configured implements Tool {
 				WORD_1.set(words[i]);
 				for (int j = i+1; j < words.length; j++) {
 					// WORD_2.set(words[j]);
-					LOG.info("Current Word: " + words[j].toString());
+					// LOG.info("Current Word: " + words[j].toString());
 					STRIPE.put(new Text(words[j]), ONE);
 					// LOG.info("Mapping... words[i]:" + words[i] + " words[j]:" + words[j]);
 				}
 				for (Writable word : STRIPE.keySet()) {
-					LOG.info("STRIPE:" + WORD_1.toString()+ " " + word.toString() + " " + STRIPE.get(word).toString());
+					// LOG.info("STRIPE:" + WORD_1.toString()+ " " + word.toString() + " " + STRIPE.get(word).toString());
 				}
 				context.write(WORD_1, STRIPE);
 				STRIPE.clear();
@@ -150,7 +150,7 @@ public class CORStripes extends Configured implements Tool {
 					Text word = (Text) entry.getKey();
 					LOG.info("Combining..." + key.toString() + " " + word.toString());
 					if (STRIPE.containsKey(word)) {
-						IntWritable COUNT = new IntWritable(((IntWritable) STRIPE.get(word)).get() + 1);
+						IntWritable COUNT = new IntWritable(((IntWritable) STRIPE.get(word)).get() + ((IntWritable)entry.getValue()).get());
 						// COUNT.set(count);
 						STRIPE.put(word, COUNT);
 					} else {
@@ -234,7 +234,7 @@ public class CORStripes extends Configured implements Tool {
 						STRIPE.put(word, COUNT);
 					} else {
 						// LOG.info("Reducing..." + key.toString() +" " + word.toString());
-						STRIPE.put(word, ONE);
+						STRIPE.put(word, new IntWritable(((IntWritable)entry.getValue()).get()));
 					}
 				}
 			}
@@ -243,6 +243,7 @@ public class CORStripes extends Configured implements Tool {
 				int count = ((IntWritable) entry.getValue()).get();
 				double value = (double) count
 						/ (word_total_map.get(key.toString()) * word_total_map.get(word_2));
+				LOG.info("Reducing..." + key.toString() +" " + word_2 + " " + count);		
 				VALUE.set(value);
 				PAIR.set(key.toString(), word_2);
 				context.write(PAIR, VALUE);
