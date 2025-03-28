@@ -30,10 +30,13 @@ def check_dict(dict_1: dict, dict_2:dict):
     """
     if len(dict_1.keys()) != len(dict_2.keys()):
         print("Lengths are different")
-        return
+        return False
+    correct = True
     for key in dict_1.keys():
         if key not in dict_2.keys() or dict_1[key] != dict_2[key]:
             print(f"Key {key} is different: {dict_1[key]} != {dict_2[key]}")
+            correct = False
+    return correct
 
 # Example usage
 if __name__ == "__main__":
@@ -41,4 +44,7 @@ if __name__ == "__main__":
     my_path = "my_cor_test.txt"
     solution_dict = load_txt_to_dict(solution_path)
     my_dict = load_txt_to_dict(my_path)
-    check_dict(solution_dict, my_dict)
+    if check_dict(solution_dict, my_dict):
+        print("The dictionaries are equal!")
+    else:
+        print("The dictionaries are different.")
